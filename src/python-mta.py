@@ -19,6 +19,10 @@ class ACE:
 class BDFM:
     url = "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-bdfm"
 
+@dataclass
+class L:
+    url = "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-l"
+
 class MTAHttpClient:
 
     def __init__(self, api_key):

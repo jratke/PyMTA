@@ -1,5 +1,7 @@
+from pprint import pprint
 import time
 import json
+from datetime import datetime
 from dataclasses import dataclass
 
 import requests as http
@@ -58,9 +60,39 @@ class Subway:
         Gets all of the information for a stop
         """
 
-        # d = MessageToJson(self.httpclient.get(self.endpoint))
+        all = list()
 
-        return print("getSubwayStop is stipp a work in Progress")
+        data = MessageToJson(self.httpclient.get(self.endpoint))
+
+        j = json.loads(data)
+        
+        df = pd.json_normalize(j, record_path=['entity']).dropna(how='all')
+        
+        stopTimeUpdate = df['tripUpdate.stopTimeUpdate']
+
+        for train in stopTimeUpdate:
+            try:
+
+                data = pd.json_normalize(train)
+
+                if stop_id in data.values:
+                    
+                    stop = data.where(data['stopId'] == stop_id).dropna(how='all')
+
+                    time = stop['arrival.time'].values.tolist()
+
+                    time_formatted = datetime.utcfromtimestamp(int(time[0])).strftime('%Y-%m-%d %H:%M:%S')
+
+                    structure = {
+                        "stop": stop_id,
+                        "time": time_formatted
+                    }
+
+                    all.append(structure)
+            except:
+                pass
+        
+        return all
 
     def getSubwayLine(self, route):
 
@@ -84,10 +116,10 @@ class API:
 
 def main():
 
-    api = API(api_key="YOUR_ACCESS_KEY_HERE")
+    api = API(api_key="YOUR_API_KEY_HERE")
 
-    d = api.subway(ACE.url).getFullFeed()
-
-    print(d)
+    #d = api.subway(ACE.url).getFullFeed()
+    e = api.subway(ACE.url).getSubwayStop('A02N')
+    pprint(e, indent=4)
 
 main()

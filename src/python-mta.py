@@ -1,4 +1,3 @@
-from pprint import pprint
 import time
 import json
 from datetime import datetime
@@ -9,7 +8,6 @@ import pandas as pd # Used for flattening JSON and parsing
 
 import gtfs_realtime_pb2
 from google.protobuf.json_format import MessageToJson
-from google.protobuf.json_format import MessageToDict
 
 # Subway Endpoints
 
@@ -60,39 +58,19 @@ class Subway:
         Gets all of the information for a stop
         """
 
-        all = list()
-
         data = MessageToJson(self.httpclient.get(self.endpoint))
 
         j = json.loads(data)
-        
+
         df = pd.json_normalize(j, record_path=['entity']).dropna(how='all')
-        
-        stopTimeUpdate = df['tripUpdate.stopTimeUpdate']
+    
+        stopTimeUpdate = df['tripUpdate.stopTimeUpdate'].dropna().explode().reset_index(drop=True).to_list()
 
-        for train in stopTimeUpdate:
-            try:
+        formatted = pd.json_normalize(stopTimeUpdate)
 
-                data = pd.json_normalize(train)
-
-                if stop_id in data.values:
-                    
-                    stop = data.where(data['stopId'] == stop_id).dropna(how='all')
-
-                    time = stop['arrival.time'].values.tolist()
-
-                    time_formatted = datetime.utcfromtimestamp(int(time[0])).strftime('%Y-%m-%d %H:%M:%S')
-
-                    structure = {
-                        "stop": stop_id,
-                        "time": time_formatted
-                    }
-
-                    all.append(structure)
-            except:
-                pass
-        
-        return all
+        resp = formatted.query(f'stopId == "{stop_id}"')
+    
+        return resp
 
     def getSubwayLine(self, route):
 
@@ -118,8 +96,10 @@ def main():
 
     api = API(api_key="YOUR_API_KEY_HERE")
 
-    #d = api.subway(ACE.url).getFullFeed()
-    e = api.subway(ACE.url).getSubwayStop('A02N')
-    pprint(e, indent=4)
+    full_feed = api.subway(ACE.url).getFullFeed()
+
+    subway_stop = api.subway(ACE.url).getSubwayStop('A02N')
+
+    print(subway_stop)
 
 main()
